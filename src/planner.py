@@ -15,7 +15,7 @@ from teams_card import build_todo_card
 GRAPH_BASE = "https://graph.microsoft.com/v1.0"
 CLIENT_ID = "d3590ed6-52b3-4102-aeff-aad2292ab01c"
 AUTHORITY = "https://login.microsoftonline.com/common"
-SCOPES = ["Tasks.Read"]
+SCOPES = ["Tasks.Read", "Chat.ReadWrite"]
 
 
 def get_access_token() -> str:
@@ -155,7 +155,7 @@ def main() -> None:
 
     date_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
     card = build_todo_card(overdue, due_this_week, unassigned, date_str)
-    post_card(card)
+    post_card(card, token=token)
 
 
 if __name__ == "__main__":

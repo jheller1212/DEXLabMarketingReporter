@@ -1,11 +1,11 @@
 # DEXLab Teams Notification Bot
 
-Scheduled notification bot that posts automated digests to a Microsoft Teams channel via Incoming Webhook. Two modules:
+Scheduled notification bot that posts Adaptive Cards to a Microsoft Teams group chat via Microsoft Graph API. Two modules:
 
 1. **Weekly ToDo Digest** — pulls incomplete tasks from Microsoft Planner and posts a categorized overview (overdue / due this week / unassigned) every Monday at 09:00 CET.
 2. **Monthly Report** — aggregates LinkedIn, Instagram, and Wix website metrics and posts a performance summary on the 1st of each month at 09:00 CET.
 
-Runs entirely as GitHub Actions workflows — zero hosting cost.
+Runs entirely as GitHub Actions workflows — zero hosting cost. No webhook connectors or Power Automate required.
 
 ---
 
@@ -21,7 +21,7 @@ Runs entirely as GitHub Actions workflows — zero hosting cost.
 │   ├── instagram.py              # Meta Graph API – Instagram Business
 │   ├── wix.py                    # Wix RSS feed + Analytics
 │   ├── teams_card.py             # Adaptive Card formatter
-│   ├── post_to_teams.py          # Webhook dispatcher
+│   ├── post_to_teams.py          # Graph API chat message dispatcher
 │   └── monthly_report.py         # Monthly report orchestrator
 ├── scripts/
 │   └── refresh_token.py          # One-time OAuth token helper (local use only)
@@ -39,7 +39,7 @@ cd DEXLabMarketingReporter
 pip install -r requirements.txt
 ```
 
-### 2. Microsoft Graph token (for Planner)
+### 2. Microsoft Graph token (for Planner + Teams chat)
 
 ```bash
 python scripts/refresh_token.py
@@ -47,11 +47,18 @@ python scripts/refresh_token.py
 
 Follow the device flow prompt, then paste the tokens into GitHub Secrets.
 
-### 3. GitHub Secrets
+### 3. Find your Teams group chat ID
+
+Use the Graph Explorer at https://developer.microsoft.com/en-us/graph/graph-explorer:
+- Sign in with your Microsoft account
+- Run: `GET https://graph.microsoft.com/v1.0/me/chats?$filter=chatType eq 'group'`
+- Find your DEXLab group chat in the results and copy the `id` field
+
+### 4. GitHub Secrets
 
 | Secret | Description |
 |---|---|
-| `TEAMS_WEBHOOK_URL` | Teams Incoming Webhook URL |
+| `TEAMS_CHAT_ID` | Teams group chat ID |
 | `MS_GRAPH_TOKEN` | Microsoft Graph access token |
 | `MS_GRAPH_REFRESH_TOKEN` | Microsoft Graph refresh token |
 | `PLANNER_PLAN_ID` | Planner plan ID |
@@ -63,7 +70,7 @@ Follow the device flow prompt, then paste the tokens into GitHub Secrets.
 | `WIX_SITE_ID` | Wix site ID |
 | `GH_PAT` | GitHub PAT with `repo` scope (for secret rotation) |
 
-### 4. Local testing
+### 5. Local testing
 
 ```bash
 # Copy and fill in .env.example, then:
