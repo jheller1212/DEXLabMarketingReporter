@@ -1,4 +1,9 @@
-"""Webhook dispatcher — posts an Adaptive Card to Microsoft Teams."""
+"""Webhook dispatcher — posts an Adaptive Card to Microsoft Teams.
+
+Supports both:
+- Power Automate Workflows webhooks (the current method)
+- Legacy Incoming Webhook connectors (deprecated but still functional)
+"""
 
 import json
 import os
@@ -8,7 +13,10 @@ import requests
 
 
 def post_card(card: dict) -> None:
-    """Post an Adaptive Card JSON payload to the Teams Incoming Webhook.
+    """Post an Adaptive Card JSON payload to the Teams webhook.
+
+    Power Automate Workflows expect the Adaptive Card as the top-level payload,
+    wrapped in the standard attachments format.
 
     Exits with code 1 on failure so GitHub Actions marks the run as failed.
     """
@@ -19,6 +27,7 @@ def post_card(card: dict) -> None:
         "attachments": [
             {
                 "contentType": "application/vnd.microsoft.card.adaptive",
+                "contentUrl": None,
                 "content": card,
             }
         ],
