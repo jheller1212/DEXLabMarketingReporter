@@ -1,12 +1,35 @@
 """Monthly social media and website report — orchestrator."""
 
+import os
+import sys
 from datetime import datetime, timedelta, timezone
+
+import msal
 
 from instagram import fetch_instagram_data
 from linkedin import fetch_linkedin_data
 from post_to_teams import post_card
 from teams_card import build_monthly_card
 from wix import fetch_blog_posts, fetch_wix_analytics
+
+CLIENT_ID = "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+AUTHORITY = "https://login.microsoftonline.com/common"
+SCOPES = ["Chat.ReadWrite"]
+
+
+def get_graph_token() -> str:
+    """Acquire a Graph token for posting to Teams chat."""
+    refresh_token = os.environ["MS_GRAPH_REFRESH_TOKEN"]
+    client_id = os.environ.get("MS_GRAPH_CLIENT_ID", CLIENT_ID)
+
+    app = msal.PublicClientApplication(client_id, authority=AUTHORITY)
+    result = app.acquire_token_by_refresh_token(refresh_token, scopes=SCOPES)
+
+    if "access_token" not in result:
+        print(f"Token refresh failed: {result.get('error_description', result)}")
+        sys.exit(1)
+
+    return result["access_token"]
 
 
 def main() -> None:
@@ -51,7 +74,9 @@ def main() -> None:
         token_warnings=token_warnings if token_warnings else None,
     )
 
-    post_card(card)
+    print("Acquiring Graph token for Teams…")
+    graph_token = get_graph_token()
+    post_card(card, token=graph_token)
 
 
 if __name__ == "__main__":

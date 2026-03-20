@@ -18,6 +18,6 @@ jobs:
           MS_GRAPH_REFRESH_TOKEN: ${{ secrets.MS_GRAPH_REFRESH_TOKEN }}
           MS_GRAPH_CLIENT_ID: ${{ secrets.MS_GRAPH_CLIENT_ID }}
           PLANNER_PLAN_ID: ${{ secrets.PLANNER_PLAN_ID }}
-          TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TEAMS_CHAT_ID: ${{ secrets.TEAMS_CHAT_ID }}
           GH_TOKEN: ${{ secrets.GH_PAT }}
           GITHUB_REPOSITORY: ${{ github.repository }}

@@ -10,7 +10,7 @@ import msal
 
 CLIENT_ID = "d3590ed6-52b3-4102-aeff-aad2292ab01c"
 AUTHORITY = "https://login.microsoftonline.com/common"
-SCOPES = ["Tasks.Read"]
+SCOPES = ["Tasks.Read", "Chat.ReadWrite"]
 
 
 def main() -> None:
