@@ -1,6 +1,4 @@
-"""Adaptive Card v1.4 formatters for ToDo digest and monthly report."""
-
-from datetime import datetime
+"""Adaptive Card v1.4 formatter for monthly report."""
 
 
 def _header(title: str, subtitle: str, color: str = "default") -> dict:
@@ -15,96 +13,8 @@ def _header(title: str, subtitle: str, color: str = "default") -> dict:
     }
 
 
-def _section_header(emoji: str, label: str, count: int, color: str = "default") -> dict:
-    return {
-        "type": "TextBlock",
-        "text": f"{emoji} {label}  ({count} task{'s' if count != 1 else ''})",
-        "weight": "bolder",
-        "size": "medium",
-        "wrap": True,
-        "spacing": "medium",
-        "color": color,
-    }
-
-
-def _task_line(task: dict, show_assignee: bool = True) -> dict:
-    parts = [f"· {task['title']}"]
-    if show_assignee and task.get("assignee"):
-        parts.append(f"— {task['assignee']}")
-    if task.get("due"):
-        parts.append(f"— due {task['due']}")
-    return {
-        "type": "TextBlock",
-        "text": "  ".join(parts),
-        "wrap": True,
-        "spacing": "small",
-    }
-
-
 def _separator() -> dict:
     return {"type": "ColumnSet", "separator": True, "spacing": "medium", "columns": []}
-
-
-def build_todo_card(
-    overdue: list[dict],
-    due_this_week: list[dict],
-    unassigned: list[dict],
-    date_str: str,
-) -> dict:
-    """Build the weekly ToDo digest Adaptive Card."""
-    body: list[dict] = []
-
-    # Determine accent color
-    if overdue:
-        accent = "attention"
-    elif due_this_week:
-        accent = "warning"
-    else:
-        accent = "good"
-
-    body.append(_header("📋 DEXLab Weekly ToDo Check-in", "", accent))
-    body.append({
-        "type": "TextBlock",
-        "text": f"Monday, {date_str}",
-        "spacing": "none",
-        "isSubtle": True,
-    })
-
-    # All clear
-    if not overdue and not due_this_week and not unassigned:
-        body.append({
-            "type": "TextBlock",
-            "text": "✅ All clear — no overdue, upcoming, or unassigned tasks.",
-            "wrap": True,
-            "spacing": "large",
-            "color": "good",
-            "weight": "bolder",
-        })
-    else:
-        if overdue:
-            body.append(_separator())
-            body.append(_section_header("🔴", "OVERDUE", len(overdue), "attention"))
-            for t in overdue:
-                body.append(_task_line(t))
-
-        if due_this_week:
-            body.append(_separator())
-            body.append(_section_header("🟡", "DUE THIS WEEK", len(due_this_week), "warning"))
-            for t in due_this_week:
-                body.append(_task_line(t))
-
-        if unassigned:
-            body.append(_separator())
-            body.append(_section_header("⚪", "UNASSIGNED", len(unassigned), "default"))
-            for t in unassigned:
-                body.append(_task_line(t, show_assignee=False))
-
-    return {
-        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-        "type": "AdaptiveCard",
-        "version": "1.4",
-        "body": body,
-    }
 
 
 def _metric_row(label: str, value: str) -> dict:
