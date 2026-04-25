@@ -20,9 +20,10 @@ export function useData(): DataState {
     async function load() {
       try {
         // Load index and latest in parallel
+        const base = import.meta.env.BASE_URL;
         const [indexRes, latestRes] = await Promise.all([
-          fetch("/data/index.json"),
-          fetch("/data/latest.json"),
+          fetch(`${base}data/index.json`),
+          fetch(`${base}data/latest.json`),
         ]);
 
         if (!indexRes.ok || !latestRes.ok) {
@@ -34,7 +35,7 @@ export function useData(): DataState {
 
         // Load all snapshots
         const snapshotPromises = index.snapshots.map(async (date) => {
-          const res = await fetch(`/data/snapshots/${date}.json`);
+          const res = await fetch(`${base}data/snapshots/${date}.json`);
           if (!res.ok) throw new Error(`Failed to load snapshot ${date}`);
           return res.json() as Promise<Snapshot>;
         });
