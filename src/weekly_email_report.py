@@ -106,6 +106,11 @@ def build_weekly_html(linkedin: dict) -> str:
 
       {metrics_html}
 
+      <!-- Dashboard link -->
+      <div style="margin-top:24px;text-align:center;">
+        <a href="https://jheller1212.github.io/DEXLabMarketingReporter/" style="display:inline-block;padding:12px 28px;background:#0077B5;color:white;font-weight:600;font-size:14px;text-decoration:none;border-radius:8px;">View Full Dashboard &rarr;</a>
+      </div>
+
     </div>
 
     <!-- Footer -->
