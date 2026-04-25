@@ -5,11 +5,23 @@ import { FollowersSection } from "./components/FollowersSection";
 import { EngagementSection } from "./components/EngagementSection";
 import { PageViewsSection } from "./components/PageViewsSection";
 import { PostPerformance } from "./components/PostPerformance";
-import { TimePeriodSelector, type TimePeriod } from "./components/TimePeriodSelector";
+import { TrendChart } from "./components/TrendChart";
+import { ComparisonKPI } from "./components/ComparisonKPI";
+import { ExpandableSection } from "./components/ExpandableSection";
+import {
+  TimePeriodSelector,
+  type TimePeriod,
+} from "./components/TimePeriodSelector";
+import {
+  groupByPeriod,
+  getComparisonPair,
+  formatPeriodLabel,
+  shortPeriodLabel,
+} from "./periodUtils";
 
 function App() {
-  const { loading, error, snapshots, latest } = useData();
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("monthly");
+  const { loading, error, snapshots } = useData();
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("weekly");
   const [dark, setDark] = useState(() => {
     if (typeof window !== "undefined") {
       return (
@@ -26,34 +38,20 @@ function App() {
     localStorage.setItem("theme", dark ? "dark" : "light");
   }, [dark]);
 
-  // With a single snapshot we just show the latest data.
-  // When more snapshots accumulate, the time period selector will filter them.
-  const currentSnapshot = latest ?? snapshots[snapshots.length - 1] ?? null;
-
-  // Find previous snapshot for delta comparisons (if available)
-  const previousSnapshot = snapshots.length > 1 ? snapshots[snapshots.length - 2] : null;
-
-  // Format snapshot date
-  const snapshotDate = currentSnapshot
-    ? new Date(currentSnapshot.date).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "";
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-[#0077B5] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Loading dashboard data...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Loading dashboard data...
+          </p>
         </div>
       </div>
     );
   }
 
-  if (error || !currentSnapshot) {
+  if (error || snapshots.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -64,6 +62,43 @@ function App() {
       </div>
     );
   }
+
+  // Group snapshots by selected time period
+  const grouped = groupByPeriod(snapshots, timePeriod);
+  const comparison = getComparisonPair(snapshots, timePeriod);
+
+  const currentSnapshot = comparison?.current ?? snapshots[snapshots.length - 1];
+  const previousSnapshot = comparison?.previous ?? null;
+
+  // Build chart data
+  const followerTrend = grouped.map((g) => ({
+    label: shortPeriodLabel(g.key, timePeriod),
+    value: g.snapshot.linkedin.followers.total,
+  }));
+
+  const impressionTrend = grouped.map((g) => ({
+    label: shortPeriodLabel(g.key, timePeriod),
+    value: g.snapshot.linkedin.engagement.impressions,
+  }));
+
+  const engagementTrend = grouped.map((g) => ({
+    label: shortPeriodLabel(g.key, timePeriod),
+    value: g.snapshot.linkedin.engagement.engagement_rate,
+  }));
+
+  const pageViewTrend = grouped.map((g) => ({
+    label: shortPeriodLabel(g.key, timePeriod),
+    value: g.snapshot.linkedin.page_views.total,
+  }));
+
+  const currentPeriodLabel = grouped.length > 0
+    ? formatPeriodLabel(grouped[grouped.length - 1].key, timePeriod)
+    : "";
+
+  const snapshotDate = new Date(currentSnapshot.date).toLocaleDateString(
+    "en-US",
+    { year: "numeric", month: "long", day: "numeric" }
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
@@ -83,7 +118,10 @@ function App() {
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden sm:block">
-              <TimePeriodSelector selected={timePeriod} onChange={setTimePeriod} />
+              <TimePeriodSelector
+                selected={timePeriod}
+                onChange={setTimePeriod}
+              />
             </div>
             <button
               onClick={() => setDark(!dark)}
@@ -114,18 +152,102 @@ function App() {
           <div>
             <h2 className="text-2xl font-bold">LinkedIn Overview</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Snapshot from {snapshotDate}
+              {currentPeriodLabel} &middot; Latest snapshot: {snapshotDate}
+              &middot; {snapshots.length} data point{snapshots.length !== 1 ? "s" : ""}
             </p>
           </div>
-          {snapshots.length === 1 && (
-            <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2.5 py-1 rounded-full">
-              1 snapshot — trend data will appear as more snapshots accumulate
-            </span>
-          )}
         </div>
 
-        {/* Summary cards */}
+        {/* Summary cards with comparison */}
         <SummaryCards snapshot={currentSnapshot} previous={previousSnapshot} />
+
+        {/* Trend charts */}
+        {grouped.length > 1 && (
+          <ExpandableSection title="Trends" defaultOpen>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  Follower Growth
+                </p>
+                <TrendChart data={followerTrend} color="#0077B5" type="line" height={140} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  Impressions
+                </p>
+                <TrendChart data={impressionTrend} color="#0077B5" type="bar" height={140} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  Engagement Rate (%)
+                </p>
+                <TrendChart
+                  data={engagementTrend}
+                  color="#10b981"
+                  type="line"
+                  height={140}
+                  formatValue={(v) => `${v.toFixed(1)}%`}
+                />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  Page Views
+                </p>
+                <TrendChart data={pageViewTrend} color="#8b5cf6" type="bar" height={140} />
+              </div>
+            </div>
+          </ExpandableSection>
+        )}
+
+        {/* Period comparison KPIs */}
+        {previousSnapshot && (
+          <ExpandableSection title={`Comparison — vs Previous ${timePeriod === "weekly" ? "Week" : timePeriod === "monthly" ? "Month" : timePeriod === "quarterly" ? "Quarter" : "Year"}`} defaultOpen>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <ComparisonKPI
+                label="Followers"
+                current={currentSnapshot.linkedin.followers.total}
+                previous={previousSnapshot.linkedin.followers.total}
+              />
+              <ComparisonKPI
+                label="Impressions"
+                current={currentSnapshot.linkedin.engagement.impressions}
+                previous={previousSnapshot.linkedin.engagement.impressions}
+              />
+              <ComparisonKPI
+                label="Engagement Rate"
+                current={currentSnapshot.linkedin.engagement.engagement_rate}
+                previous={previousSnapshot.linkedin.engagement.engagement_rate}
+                format={(v) => v.toFixed(2)}
+                suffix="%"
+              />
+              <ComparisonKPI
+                label="Page Views"
+                current={currentSnapshot.linkedin.page_views.total}
+                previous={previousSnapshot.linkedin.page_views.total}
+              />
+              <ComparisonKPI
+                label="Likes"
+                current={currentSnapshot.linkedin.engagement.likes}
+                previous={previousSnapshot.linkedin.engagement.likes}
+              />
+              <ComparisonKPI
+                label="Comments"
+                current={currentSnapshot.linkedin.engagement.comments}
+                previous={previousSnapshot.linkedin.engagement.comments}
+              />
+              <ComparisonKPI
+                label="Link Clicks"
+                current={currentSnapshot.linkedin.engagement.clicks}
+                previous={previousSnapshot.linkedin.engagement.clicks}
+              />
+              <ComparisonKPI
+                label="Shares"
+                current={currentSnapshot.linkedin.engagement.shares}
+                previous={previousSnapshot.linkedin.engagement.shares}
+              />
+            </div>
+          </ExpandableSection>
+        )}
 
         {/* Expandable detail sections */}
         <div className="space-y-4">
@@ -147,7 +269,8 @@ function App() {
 
       {/* Footer */}
       <footer className="border-t border-gray-200 dark:border-gray-800 py-6 text-center text-xs text-gray-400 dark:text-gray-600">
-        DEXLab &middot; School of Business and Economics &middot; Maastricht University
+        DEXLab &middot; School of Business and Economics &middot; Maastricht
+        University
       </footer>
     </div>
   );
