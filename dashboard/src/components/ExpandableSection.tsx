@@ -3,7 +3,7 @@ import { useState, type ReactNode } from "react";
 interface Props {
   title: string;
   subtitle?: string;
-  icon: ReactNode;
+  icon?: ReactNode;
   defaultOpen?: boolean;
   children: ReactNode;
 }
@@ -19,9 +19,11 @@ export function ExpandableSection({ title, subtitle, icon, defaultOpen = false, 
         aria-expanded={open}
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#0077B5]/10 dark:bg-[#0077B5]/20 text-[#0077B5] flex items-center justify-center">
-            {icon}
-          </div>
+          {icon && (
+            <div className="w-9 h-9 rounded-lg bg-[#0077B5]/10 dark:bg-[#0077B5]/20 text-[#0077B5] flex items-center justify-center">
+              {icon}
+            </div>
+          )}
           <div className="text-left">
             <h3 className="font-semibold text-base">{title}</h3>
             {subtitle && (
